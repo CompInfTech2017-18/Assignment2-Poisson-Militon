@@ -5,9 +5,12 @@ Created on Tue Feb 20 01:38:24 2018
 @author: kazy
 """
 import imageio
+import sys
 import pylab
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import lines as line
+from matplotlib.lines import Line2D
 from mpl_toolkits.mplot3d import axes3d
 
 
@@ -89,20 +92,7 @@ class Solve:
             #print(Unew)
         return self.Unew
 
-    def plotter(self, U):
-        X=np.linspace(0,self.N,self.N)
-        Y=np.linspace(0,self.M,self.M)
-        self.xgrid, self.ygrid = np.meshgrid(X,Y)
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        CS = plt.contour(self.xgrid, self.ygrid, U, colors=('indigo', 'purple', 'b', 'm', 'violet', 'aqua'), linewidths=0.8)
-        ax.plot_wireframe(self.xgrid, self.ygrid, U, color='black', linewidth=0.3)
-        for angle in range(0, 360):
-            ax.view_init(30, angle)
-            plt.draw()
-            plt.pause(.001)
-        pylab.show()
 
     def run(self,method):
         if method=='jacoby':
@@ -155,10 +145,12 @@ class Solve:
     def conductor(self):
         self.Ucond1 = self.cond_read('potential.png')
         self.Ucond = self.Ucond1
+        self.Ex = self.Ucond
+        self.Ey = self.Ucond
         self.plotter(self.Ucond)
         U1 = 0
         U2 = 1
-        for t in range(1000):
+        for t in range(10000):
             print(t)
         #while (np.absolute(U1 - U2) > self.eps):
             U1 = np.trace(self.Ucond)
@@ -182,10 +174,45 @@ class Solve:
                     j += 1
                 i += 1
                 j = 0
-
             U2 = np.trace(self.Ucond)
 
+        self.Ex = (self.Ucond[1:-1, 2:] - self.Ucond[1:-1, 0:-2]) / 2
+        self.Ey = (self.Ucond[2:, 1:-1] - self.Ucond[0:-2, 1:-1]) / 2
+        self.Ex = np.insert(self.Ex, 0, 0, axis=0)
+        self.Ex = np.insert(self.Ex, self.M - 1, 0, axis=0)
+        self.Ex = np.insert(self.Ex, 0, 0, axis=1)
+        self.Ex = np.insert(self.Ex, self.N - 1, 0, axis=1)
+        self.Ey = np.insert(self.Ey, 0, 0, axis=0)
+        self.Ey = np.insert(self.Ey, self.M - 1, 0, axis=0)
+        self.Ey = np.insert(self.Ey, 0, 0, axis=1)
+        self.Ey = np.insert(self.Ey, self.N - 1, 0, axis=1)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.streamplot(self.xgrid, self.ygrid, self.Ex, self.Ey)
+        plt.contour(self.xgrid, self.ygrid, self.Ucond, colors=('indigo', 'purple', 'b', 'm', 'violet', 'aqua'), linewidths=0.8)
+        l=line.Line2D([20, 80], [40, 40], lw=4, color='red')
+        ax.add_line(l)
+        l = line.Line2D([20, 80], [60, 60], lw=4, color='green')
+        ax.add_line(l)
+        pylab.show()
+
         return self.Ucond
+
+    def plotter(self, U):
+        X=np.linspace(0,self.N,self.N)
+        Y=np.linspace(0,self.M,self.M)
+        self.xgrid, self.ygrid = np.meshgrid(X,Y)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        CS = plt.contour(self.xgrid, self.ygrid, U, colors=('indigo', 'purple', 'b', 'm', 'violet', 'aqua', 'red'), linewidths=0.8)
+        ax.plot_wireframe(self.xgrid, self.ygrid, U, color='black', linewidth=0.3)
+        #plt.streamplot(self.xgrid, self.ygrid, self.Ex, self.Ey)
+        ax.view_init(30, 0)
+        pylab.show()
+
+
 
 
 #Resh=Solve(20,1000)
